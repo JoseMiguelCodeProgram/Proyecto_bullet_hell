@@ -75,6 +75,7 @@ class EnemyDistance(Enemy):
     def draw(self, screen):
         
         pygame.draw.rect(screen, (255, 10, 50), self.rect)
+        pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
         for bullet in self.bullets:
             pygame.draw.circle(screen, (255, 255, 0), (int(bullet[0]), int(bullet[1])), 5)
 
@@ -116,5 +117,6 @@ class EnemyShotgun(Enemy):
     def draw(self, screen):
         
         pygame.draw.rect(screen, (255, 50, 10), self.rect)
+        pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
         for bullet in self.bullets:
             pygame.draw.circle(screen, (255, 150, 0), (int(bullet[0]), int(bullet[1])), 5)
