@@ -14,7 +14,7 @@ enemies = []
 
 # Temporizador para generar enemigos
 enemy_spawn_timer = 0
-enemy_spawn_interval = 1000  # Cada 2 segundos
+enemy_spawn_interval = 2000  # Cada 2 segundos
 
 # Main Loop
 running = True
