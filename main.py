@@ -25,14 +25,31 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             player.shoot(mouse_x, mouse_y)
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_e:  # Cambiar arma con 'E'
+                player.switch_weapon()
 
-    # Generar enemigos (lógica corregida)
+    # Generar enemigos (lógica corregida para aparecer en bordes)
     enemy_spawn_timer += clock.get_time()
     if enemy_spawn_timer >= enemy_spawn_interval:
         enemy_spawn_timer = 0
-        x = random.randint(0, WIDTH - 50)
-        y = random.randint(0, HEIGHT - 50)
 
+        # Elegir un borde: 0=superior, 1=inferior, 2=izquierdo, 3=derecho
+        edge = random.choice(["top", "bottom", "left", "right"])
+        if edge == "top":
+            x = random.randint(0, WIDTH)  # Posición horizontal aleatoria
+            y = 0  # En el borde superior
+        elif edge == "bottom":
+            x = random.randint(0, WIDTH)  # Posición horizontal aleatoria
+            y = HEIGHT  # En el borde inferior
+        elif edge == "left":
+            x = 0  # En el borde izquierdo
+            y = random.randint(0, HEIGHT)  # Posición vertical aleatoria
+        elif edge == "right":
+            x = WIDTH  # En el borde derecho
+            y = random.randint(0, HEIGHT)  # Posición vertical aleatoria
+            
+        # Generar tipo de enemigo
         rand = random.random()
         if rand < 0.4:  # 40% probabilidad de enemigo normal
             enemies.append(Enemy(x, y))
@@ -40,6 +57,7 @@ while running:
             enemies.append(EnemyDistance(x, y))
         else:  # 20% probabilidad de enemigo con escopeta
             enemies.append(EnemyShotgun(x, y))
+
 
     # Actualizar lógica del jugador y enemigos
     player.update()

@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 from settings import WIDTH, HEIGHT, player_size
+from bullet import Bullet, BulletType
 
 class Player:
     def __init__(self, x, y):
@@ -11,6 +12,8 @@ class Player:
         self.invulnerable = False  # Estado de invulnerabilidad
         self.invulnerability_time = 0  # Tiempo restante de invulnerabilidad
         self.last_hit_time = 0  # Última vez que recibió daño
+        self.weapons = [BulletType.NORMAL, BulletType.SHOTGUN]  # Tipos de armas disponibles
+        self.current_weapon_index = 0  # Índice del arma actual
 
     def update(self):
         keys = pygame.key.get_pressed()
@@ -25,9 +28,8 @@ class Player:
 
         # Actualizar balas
         for bullet in self.bullets[:]:
-            bullet[0] += bullet[2] * 10  # Actualizar posición X
-            bullet[1] += bullet[3] * 10  # Actualizar posición Y
-            if bullet[0] < 0 or bullet[0] > WIDTH or bullet[1] < 0 or bullet[1] > HEIGHT:
+            bullet.update()  # Llama al método update del objeto Bullet
+            if bullet.is_out_of_bounds(WIDTH, HEIGHT):  # Verifica si la bala está fuera de los límites
                 self.bullets.remove(bullet)
 
         # Reducir el tiempo de invulnerabilidad
@@ -35,23 +37,62 @@ class Player:
             current_time = pygame.time.get_ticks()
             if current_time - self.last_hit_time >= self.invulnerability_time:
                 self.invulnerable = False
-
+    
     def draw(self, screen):
         # Cambiar el color si el jugador es invulnerable
         color = (0, 255, 0) if not self.invulnerable else (255, 255, 0)
         pygame.draw.rect(screen, color, self.rect)
         pygame.draw.rect(screen, (0, 0, 255), (self.rect.x, self.rect.y - 10, player_size * (self.health / 10), 5))
+    
+        # Dibujar las balas
         for bullet in self.bullets:
-            pygame.draw.circle(screen, (255, 255, 0), (int(bullet[0]), int(bullet[1])), 5)
+            bullet.draw(screen)
+
 
     def shoot(self, mouse_x, mouse_y):
+        current_weapon = self.weapons[self.current_weapon_index]
+
         dx = mouse_x - self.rect.centerx
         dy = mouse_y - self.rect.centery
         distance = math.sqrt(dx**2 + dy**2)
         if distance != 0:
             dx /= distance
             dy /= distance
-        self.bullets.append([self.rect.centerx, self.rect.centery, dx, dy])
+
+        if current_weapon == BulletType.NORMAL:
+            # Disparo normal
+            new_bullet = Bullet(
+                x=self.rect.centerx,
+                y=self.rect.centery,
+                dx=dx,
+                dy=dy,
+                speed=10,
+                color=(255, 255, 0),
+                damage=1,
+                bullet_type=BulletType.NORMAL
+            )
+            self.bullets.append(new_bullet)
+
+        elif current_weapon == BulletType.SHOTGUN:
+            # Disparo tipo escopeta
+            spread_angle = 45  # Ángulo total del abanico
+            bullet_count = 5  # Número de balas
+            for i in range(bullet_count):
+                spread = (i - bullet_count // 2) * (spread_angle / bullet_count)
+                angle = math.atan2(dy, dx) + math.radians(spread)
+                bullet_dx = math.cos(angle)
+                bullet_dy = math.sin(angle)
+                new_bullet = Bullet(
+                    x=self.rect.centerx,
+                    y=self.rect.centery,
+                    dx=bullet_dx,
+                    dy=bullet_dy,
+                    speed=8,
+                    color=(255, 100, 0),
+                    damage=2,
+                    bullet_type=BulletType.SHOTGUN
+                )
+                self.bullets.append(new_bullet)
 
     def take_damage(self):
         """Reduce la vida del jugador si no está invulnerable."""
@@ -64,14 +105,22 @@ class Player:
 
     def check_collision(self, enemies, bullets):
         """Verifica colisiones con enemigos y balas."""
+        # Verificar colisiones con enemigos
         for enemy in enemies:
             if self.rect.colliderect(enemy.rect):
                 if self.take_damage():
                     return True
 
+        # Verificar colisiones con balas enemigas
         for bullet in bullets:
-            if self.rect.collidepoint(bullet[0], bullet[1]):
-                bullets.remove(bullet)
+            if self.rect.collidepoint(bullet.x, bullet.y):  # Extraer coordenadas de la bala
+                bullets.remove(bullet)  # Eliminar la bala que colisiona
                 if self.take_damage():
                     return True
+
         return False
+
+    
+    def switch_weapon(self):
+        """Cambiar al siguiente arma disponible."""
+        self.current_weapon_index = (self.current_weapon_index + 1) % len(self.weapons)

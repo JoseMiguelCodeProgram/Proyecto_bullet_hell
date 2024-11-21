@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 from settings import WIDTH, HEIGHT
+from bullet import Bullet, BulletType
 
 class Enemy:
     def __init__(self, x, y):
@@ -32,10 +33,10 @@ class Enemy:
         Verifica si el enemigo colisiona con alguna bala y reduce su salud.
         Retorna True si el enemigo muere.
         """
-        for bullet in bullets[:]:  # Iterar sobre las balas
-            if self.rect.collidepoint(bullet[0], bullet[1]):  # Verificar colisión
-                bullets.remove(bullet)  # Eliminar la bala
-                if self.take_damage():  # Reducir salud y verificar si muere
+        for bullet in bullets:
+            if self.rect.collidepoint(bullet.x, bullet.y):  # Extraer coordenadas de la bala
+                bullets.remove(bullet)  # Eliminar la bala que colisiona
+                if self.take_damage():
                     return True
         return False
 
@@ -45,39 +46,54 @@ class Enemy:
         # Dibujar barra de vida
         pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
 
+
 class EnemyDistance(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.reload_time = random.randint(500, 1000)  # Tiempo de recarga aleatorio
         self.bullets = []
-        self.last_shot_time = 0
+        self.reload_time = 1000  # Tiempo de recarga (en milisegundos)
+        self.last_shot_time = 0  # Tiempo del último disparo
 
     def shoot(self, player_pos):
         current_time = pygame.time.get_ticks()
         if current_time - self.last_shot_time >= self.reload_time:
+            self.last_shot_time = current_time  # Actualizar tiempo del último disparo
+            
+            # Calcular dirección hacia el jugador
             dx = player_pos[0] - self.rect.centerx
             dy = player_pos[1] - self.rect.centery
-            distance = math.sqrt(dx ** 2 + dy ** 2)
+            distance = math.sqrt(dx**2 + dy**2)
             if distance != 0:
                 dx /= distance
                 dy /= distance
-            self.bullets.append([self.rect.centerx, self.rect.centery, dx, dy])
-            self.last_shot_time = current_time
+            
+            # Crear una nueva bala
+            new_bullet = Bullet(
+                x=self.rect.centerx,
+                y=self.rect.centery,
+                dx=dx,
+                dy=dy,
+                speed=6,
+                color=(255, 0, 0),
+                damage=1,
+                bullet_type=BulletType.NORMAL
+            )
+            self.bullets.append(new_bullet)
 
     def update_bullets(self):
+        """Actualizar las balas disparadas por el enemigo."""
         for bullet in self.bullets[:]:
-            bullet[0] += bullet[2] * 8  # Incrementar la velocidad
-            bullet[1] += bullet[3] * 8
-            if bullet[0] < 0 or bullet[0] > WIDTH or bullet[1] < 0 or bullet[1] > HEIGHT:
+            bullet.update()
+            if bullet.is_out_of_bounds(WIDTH, HEIGHT):
                 self.bullets.remove(bullet)
 
-
     def draw(self, screen):
-        
-        pygame.draw.rect(screen, (255, 10, 50), self.rect)
-        pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
+        pygame.draw.rect(screen, (255, 0, 0), self.rect)
         for bullet in self.bullets:
-            pygame.draw.circle(screen, (255, 255, 0), (int(bullet[0]), int(bullet[1])), 5)
+            bullet.draw(screen)
+            
+        pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
+
 
 class EnemyShotgun(Enemy):
     def __init__(self, x, y):
@@ -95,28 +111,38 @@ class EnemyShotgun(Enemy):
             # Calcular el ángulo hacia el jugador
             dx = player_pos[0] - self.rect.centerx
             dy = player_pos[1] - self.rect.centery
-            angle_to_player = math.atan2(dy, dx)
-            
+            angle_to_player = math.atan2(dy, dx)  # Ángulo en radianes hacia el jugador
+
             # Generar balas en un abanico
             for i in range(self.bullet_count):
                 spread = (i - self.bullet_count // 2) * (self.spread_angle / self.bullet_count)
-                angle = angle_to_player + math.radians(spread)
-                bullet_dx = math.cos(angle)
-                bullet_dy = math.sin(angle)
-                self.bullets.append([self.rect.centerx, self.rect.centery, bullet_dx, bullet_dy])
-            
+                angle = angle_to_player + math.radians(spread)  # Ángulo de cada bala
+                bullet_dx = math.cos(angle)  # Dirección X de la bala
+                bullet_dy = math.sin(angle)  # Dirección Y de la bala
+
+                # Crear una nueva bala
+                new_bullet = Bullet(
+                    x=self.rect.centerx,
+                    y=self.rect.centery,
+                    dx=bullet_dx,
+                    dy=bullet_dy,
+                    speed=self.bullet_speed,
+                    color=(255, 150, 0),  # Color específico para estas balas
+                    damage=2  # Daño de cada bala de escopeta
+                )
+                self.bullets.append(new_bullet)
+
             self.last_shot_time = current_time
 
     def update_bullets(self):
+        """Actualizar las balas y eliminarlas si salen de la pantalla."""
         for bullet in self.bullets[:]:
-            bullet[0] += bullet[2] * self.bullet_speed
-            bullet[1] += bullet[3] * self.bullet_speed
-            if bullet[0] < 0 or bullet[0] > WIDTH or bullet[1] < 0 or bullet[1] > HEIGHT:
+            bullet.update()
+            if bullet.is_out_of_bounds(WIDTH, HEIGHT):
                 self.bullets.remove(bullet)
 
     def draw(self, screen):
-        
-        pygame.draw.rect(screen, (255, 50, 10), self.rect)
-        pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
+        """Dibuja al enemigo y sus balas."""
+        super().draw(screen)  # Dibujar el enemigo
         for bullet in self.bullets:
-            pygame.draw.circle(screen, (255, 150, 0), (int(bullet[0]), int(bullet[1])), 5)
+            bullet.draw(screen)  # Dibujar las balas
