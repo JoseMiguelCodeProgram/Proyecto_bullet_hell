@@ -2,11 +2,22 @@ import pygame
 from player import Player
 from enemy import Enemy, EnemyDistance, EnemyShotgun
 from settings import WIDTH, HEIGHT, FPS
+from menu import show_menu
+from death_menu import DeathMenu
 import random
 
 pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+
+# Configurar pantalla completa
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
+
+# Mostrar el menú principal
+menu_action = show_menu(screen)
+if menu_action == "exit":
+    pygame.quit()
+    exit()
 
 # Inicialización del jugador y lista de enemigos
 player = Player(WIDTH // 2, HEIGHT // 2)
@@ -16,86 +27,94 @@ enemies = []
 enemy_spawn_timer = 0
 enemy_spawn_interval = 2000  # Cada 2 segundos
 
-# Main Loop
+# Estado inicial del juego
+game_state = "playing"
+
+# Bucle principal
 running = True
 while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            player.shoot(mouse_x, mouse_y)
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_e:  # Cambiar arma con 'E'
-                player.switch_weapon()
+    if game_state == "playing":
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                player.shoot(mouse_x, mouse_y)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_e:  # Cambiar arma con 'E'
+                    player.switch_weapon()
 
-    # Generar enemigos (lógica corregida para aparecer en bordes)
-    enemy_spawn_timer += clock.get_time()
-    if enemy_spawn_timer >= enemy_spawn_interval:
-        enemy_spawn_timer = 0
+        # Generar enemigos
+        enemy_spawn_timer += clock.get_time()
+        if enemy_spawn_timer >= enemy_spawn_interval:
+            enemy_spawn_timer = 0
+            edge = random.choice(["top", "bottom", "left", "right"])
+            if edge == "top":
+                x, y = random.randint(0, WIDTH), 0
+            elif edge == "bottom":
+                x, y = random.randint(0, WIDTH), HEIGHT
+            elif edge == "left":
+                x, y = 0, random.randint(0, HEIGHT)
+            elif edge == "right":
+                x, y = WIDTH, random.randint(0, HEIGHT)
 
-        # Elegir un borde: 0=superior, 1=inferior, 2=izquierdo, 3=derecho
-        edge = random.choice(["top", "bottom", "left", "right"])
-        if edge == "top":
-            x = random.randint(0, WIDTH)  # Posición horizontal aleatoria
-            y = 0  # En el borde superior
-        elif edge == "bottom":
-            x = random.randint(0, WIDTH)  # Posición horizontal aleatoria
-            y = HEIGHT  # En el borde inferior
-        elif edge == "left":
-            x = 0  # En el borde izquierdo
-            y = random.randint(0, HEIGHT)  # Posición vertical aleatoria
-        elif edge == "right":
-            x = WIDTH  # En el borde derecho
-            y = random.randint(0, HEIGHT)  # Posición vertical aleatoria
-            
-        # Generar tipo de enemigo
-        rand = random.random()
-        if rand < 0.4:  # 40% probabilidad de enemigo normal
-            enemies.append(Enemy(x, y))
-        elif rand < 0.8:  # 40% probabilidad de enemigo a distancia
-            enemies.append(EnemyDistance(x, y))
-        else:  # 20% probabilidad de enemigo con escopeta
-            enemies.append(EnemyShotgun(x, y))
+            # Generar tipo de enemigo
+            rand = random.random()
+            if rand < 0.4:
+                enemies.append(Enemy(x, y))
+            elif rand < 0.8:
+                enemies.append(EnemyDistance(x, y))
+            else:
+                enemies.append(EnemyShotgun(x, y))
 
+        # Actualizar lógica del jugador y enemigos
+        player.update()
+        player_pos = player.rect.center
 
-    # Actualizar lógica del jugador y enemigos
-    player.update()
-    player_pos = player.rect.center
+        for enemy in enemies[:]:
+            enemy.update(player_pos)
+            if isinstance(enemy, (EnemyDistance, EnemyShotgun)):
+                enemy.shoot(player_pos)
+                enemy.update_bullets()
+            if enemy.check_collision_with_bullets(player.bullets):
+                enemies.remove(enemy)
 
-    # Actualizar lógica de los enemigos
-    for enemy in enemies[:]:  # Iterar sobre los enemigos
-        enemy.update(player_pos)
+        # Verificar colisiones
+        all_enemy_bullets = [
+            bullet for enemy in enemies
+            if isinstance(enemy, (EnemyDistance, EnemyShotgun))
+            for bullet in enemy.bullets
+        ]
+        if player.check_collision(enemies, all_enemy_bullets):
+            game_state = "death_menu"  # Cambiar al menú de muerte
+            death_menu = DeathMenu(screen)
 
-        # Si es un enemigo a distancia, disparar y mover balas
-        if isinstance(enemy, EnemyDistance):
-            enemy.shoot(player_pos)
-            enemy.update_bullets()
+        # Dibujar todo
+        screen.fill((0, 0, 0))
+        player.draw(screen)
+        for enemy in enemies:
+            enemy.draw(screen)
+        pygame.display.flip()
+        clock.tick(FPS)
 
-        # Si es un enemigo con escopeta, disparar y mover balas
-        elif isinstance(enemy, EnemyShotgun):
-            enemy.shoot(player_pos)
-            enemy.update_bullets()
+    elif game_state == "death_menu":
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            selected_option = death_menu.handle_input(event)
+            if selected_option == 0:  # Reintentar
+                enemies.clear()
+                player.reset_position(WIDTH // 2, HEIGHT // 2)
+                game_state = "playing"
+            elif selected_option == 1:  # Menú Principal
+                menu_action = show_menu(screen)
+                if menu_action == "exit":
+                    running = False
+                elif menu_action == "start":
+                    enemies.clear()
+                    player.reset_position(WIDTH // 2, HEIGHT // 2)
+                    game_state = "playing"
 
-        # Verificar colisiones con las balas del jugador
-        if enemy.check_collision_with_bullets(player.bullets):
-            enemies.remove(enemy)  # Eliminar enemigo si muere
-
-    # Verificar colisiones del jugador
-    all_enemy_bullets = [
-        bullet for enemy in enemies 
-        if isinstance(enemy, (EnemyDistance, EnemyShotgun)) 
-        for bullet in enemy.bullets
-    ]
-    if player.check_collision(enemies, all_enemy_bullets):
-        print("¡El jugador murió!")
-        running = False
-
-    # Dibujar todo
-    screen.fill((0, 0, 0))
-    player.draw(screen)
-    for enemy in enemies:
-        enemy.draw(screen)
-
-    pygame.display.flip()
-    clock.tick(FPS)
+        death_menu.draw()
+        pygame.display.flip()
+        clock.tick(FPS)

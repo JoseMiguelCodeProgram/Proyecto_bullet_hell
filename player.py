@@ -94,6 +94,11 @@ class Player:
                 )
                 self.bullets.append(new_bullet)
 
+    def reset_position(self, x, y):
+        """Reinicia la posición del jugador."""
+        self.rect.center = (x, y)
+        self.health = 10
+
     def take_damage(self):
         """Reduce la vida del jugador si no está invulnerable."""
         if not self.invulnerable:
