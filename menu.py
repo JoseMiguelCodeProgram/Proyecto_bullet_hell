@@ -4,8 +4,9 @@ from settings import WIDTH, HEIGHT
 pygame.init()
 
 # Colores
-WHITE = (100, 150, 100)
+WHITE = (255, 255, 255)
 GREEN = (10, 150, 50)
+BLACK_TRANSPARENT = (0, 0, 0, 150)  # Negro semitransparente
 
 class Menu:
     def __init__(self, screen):
@@ -24,7 +25,10 @@ class Menu:
     def draw(self):
         self.screen.blit(self.background, (0, 0))  # Dibujar la imagen de fondo
 
-        # Dibujar título
+        # Dibujar título con fondo
+        title_bg = pygame.Surface((WIDTH, 120), pygame.SRCALPHA)  # Fondo transparente para el título
+        title_bg.fill(BLACK_TRANSPARENT)
+        self.screen.blit(title_bg, (0, 30))
         title = self.font.render("Plantz Assault", True, GREEN)
         self.screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 50))
 
@@ -33,13 +37,24 @@ class Menu:
             mouse_pos = pygame.mouse.get_pos()
             for i, option in enumerate(self.options):
                 option_rect = pygame.Rect(
-                    WIDTH // 2 - 100, 200 + i * 50, 200, 40
+                    WIDTH // 2 - 150, 200 + i * 70, 300, 60
                 )  # Área interactiva de la opción
+
+                # Fondo para cada opción
+                option_bg = pygame.Surface((300, 60), pygame.SRCALPHA)
+                option_bg.fill(BLACK_TRANSPARENT)
+                self.screen.blit(option_bg, option_rect.topleft)
+
+                # Cambiar color del texto al pasar el mouse
                 color = GREEN if option_rect.collidepoint(mouse_pos) else WHITE
                 text = self.small_font.render(option, True, color)
-                self.screen.blit(text, (WIDTH // 2 - text.get_width() // 2, 200 + i * 50))
+                self.screen.blit(text, (WIDTH // 2 - text.get_width() // 2, 210 + i * 70))
         else:
-            # Dibujar instrucciones
+            # Dibujar instrucciones con fondo
+            instructions_bg = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            instructions_bg.fill(BLACK_TRANSPARENT)
+            self.screen.blit(instructions_bg, (0, 0))
+
             instructions_title = self.font.render("Instructions", True, WHITE)
             self.screen.blit(instructions_title, (WIDTH // 2 - instructions_title.get_width() // 2, 100))
 
@@ -63,7 +78,7 @@ class Menu:
         if not self.show_instructions:
             for i, option in enumerate(self.options):
                 option_rect = pygame.Rect(
-                    WIDTH // 2 - 100, 200 + i * 50, 200, 40
+                    WIDTH // 2 - 150, 200 + i * 70, 300, 60
                 )  # Área interactiva de la opción
                 if option_rect.collidepoint(mouse_pos) and mouse_click[0]:  # Click izquierdo
                     return i
@@ -72,7 +87,6 @@ class Menu:
             if keys[pygame.K_ESCAPE]:  # Regresar al menú con 'Esc'
                 self.show_instructions = False
         return None
-    
     
 
 def show_menu(screen):

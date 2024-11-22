@@ -8,10 +8,13 @@ import random
 
 pygame.init()
 
-
 # Configurar pantalla completa
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
+
+# Cargar la imagen de fondo
+fondo_juego = pygame.image.load("./assets/fondo_juego.jpg")
+fondo_juego = pygame.transform.scale(fondo_juego, (WIDTH, HEIGHT))  # Ajustar al tamaño de la pantalla
 
 # Mostrar el menú principal
 menu_action = show_menu(screen)
@@ -90,7 +93,7 @@ while running:
             death_menu = DeathMenu(screen)
 
         # Dibujar todo
-        screen.fill((0, 0, 0))
+        screen.blit(fondo_juego, (0, 0))  # Dibujar el fondo
         player.draw(screen)
         for enemy in enemies:
             enemy.draw(screen)

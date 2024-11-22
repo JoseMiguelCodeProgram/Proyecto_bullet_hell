@@ -7,10 +7,17 @@ class DeathMenu:
         self.font = pygame.font.Font(None, 70)
         self.options = ["Reintentar", "Menú Principal"]
         self.selected_option = 0
+        
+        # Cargar y escalar la imagen de fondo
+        self.background = pygame.image.load("./assets/game_over.jpg")
+        self.background = pygame.transform.scale(self.background, (WIDTH, HEIGHT))
 
     def draw(self):
         """Dibuja el menú de muerte."""
-        self.screen.fill((0, 0, 0))  # Fondo negro
+        # Dibujar la imagen de fondo
+        self.screen.blit(self.background, (0, 0))
+
+        # Dibujar el texto del título
         title_text = self.font.render("¡Has Muerto!", True, (255, 0, 0))
         self.screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 4))
 
