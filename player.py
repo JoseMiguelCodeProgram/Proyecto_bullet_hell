@@ -9,13 +9,23 @@ class Player:
         self.rect = pygame.Rect(x, y, player_size, player_size)
         self.bullets = []
         self.health = 10
-        self.invulnerable = False  # Estado de invulnerabilidad
-        self.invulnerability_time = 0  # Tiempo restante de invulnerabilidad
-        self.last_hit_time = 0  # Última vez que recibió daño
-        self.weapons = [BulletType.NORMAL, BulletType.SHOTGUN]  # Tipos de armas disponibles
-        self.current_weapon_index = 0  # Índice del arma actual
+        self.invulnerable = False
+        self.invulnerability_time = 0
+        self.last_hit_time = 0
+        self.weapons = [BulletType.NORMAL, BulletType.SHOTGUN]
+        self.current_weapon_index = 0
+
+        # Animación del jugador
+        self.sprites = [
+            pygame.transform.scale(pygame.image.load(f"./assets/player/jugador_{i}.png"), (player_size, player_size))
+            for i in range(1, 6)
+        ]
+        self.current_frame = 0
+        self.animation_speed = 0.1
+        self.animation_timer = 0
 
     def update(self):
+        # Movimiento
         keys = pygame.key.get_pressed()
         if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and self.rect.x > 0:
             self.rect.x -= 5
@@ -26,10 +36,16 @@ class Player:
         if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and self.rect.y < HEIGHT - player_size:
             self.rect.y += 5
 
+        # Actualizar animación
+        self.animation_timer += self.animation_speed
+        if self.animation_timer >= 1:
+            self.animation_timer = 0
+            self.current_frame = (self.current_frame + 1) % len(self.sprites)
+
         # Actualizar balas
         for bullet in self.bullets[:]:
-            bullet.update()  # Llama al método update del objeto Bullet
-            if bullet.is_out_of_bounds(WIDTH, HEIGHT):  # Verifica si la bala está fuera de los límites
+            bullet.update()
+            if bullet.is_out_of_bounds(WIDTH, HEIGHT):
                 self.bullets.remove(bullet)
 
         # Reducir el tiempo de invulnerabilidad
@@ -37,16 +53,29 @@ class Player:
             current_time = pygame.time.get_ticks()
             if current_time - self.last_hit_time >= self.invulnerability_time:
                 self.invulnerable = False
-    
+
     def draw(self, screen):
-        # Cambiar el color si el jugador es invulnerable
-        color = (0, 255, 0) if not self.invulnerable else (255, 255, 0)
-        pygame.draw.rect(screen, color, self.rect)
+        # Calcular el ángulo hacia el mouse
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        dx = mouse_x - self.rect.centerx
+        dy = mouse_y - self.rect.centery
+        angle = math.degrees(math.atan2(-dy, dx))  # -dy porque el eje Y está invertido
+    
+        # Rotar el sprite del jugador
+        rotated_sprite = pygame.transform.rotate(self.sprites[self.current_frame], angle)
+        rotated_rect = rotated_sprite.get_rect(center=self.rect.center)
+    
+        # Dibujar sprite rotado
+        screen.blit(rotated_sprite, rotated_rect)
+    
+        # Dibujar barra de vida
         pygame.draw.rect(screen, (0, 0, 255), (self.rect.x, self.rect.y - 10, player_size * (self.health / 10), 5))
     
         # Dibujar las balas
         for bullet in self.bullets:
             bullet.draw(screen)
+
+
 
 
     def shoot(self, mouse_x, mouse_y):

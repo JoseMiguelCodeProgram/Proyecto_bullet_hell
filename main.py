@@ -96,7 +96,7 @@ while running:
         screen.blit(fondo_juego, (0, 0))  # Dibujar el fondo
         player.draw(screen)
         for enemy in enemies:
-            enemy.draw(screen)
+            enemy.draw(screen, player.rect.center)
         pygame.display.flip()
         clock.tick(FPS)
 

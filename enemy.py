@@ -7,21 +7,51 @@ from bullet import Bullet, BulletType
 class Enemy:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, 50, 50)
-        self.speed = random.uniform(2.0, 6.0)  # Velocidad aleatoria entre 2.0 y 6.0
-        self.health = random.randint(3, 6)  # Vidas aleatorias
+        self.speed = random.uniform(2.0, 6.0)
+        self.health = random.randint(3, 6)
+
+        # Animación del enemigo
+        self.sprites = [
+            pygame.transform.scale(pygame.image.load(f"./assets/enemy/enemy_simple_{i}.png"), (50, 50))
+            for i in range(1, 6)
+        ]
+        self.current_frame = 0
+        self.animation_speed = 0.1
+        self.animation_timer = 0
 
     def update(self, player_pos):
         dx = player_pos[0] - self.rect.centerx
         dy = player_pos[1] - self.rect.centery
-
         distance = math.sqrt(dx ** 2 + dy ** 2)
         if distance != 0:
             dx /= distance
             dy /= distance
 
-        # Movimiento proporcional a la velocidad aleatoria
+        # Movimiento
         self.rect.x += dx * self.speed
         self.rect.y += dy * self.speed
+
+        # Actualizar animación
+        self.animation_timer += self.animation_speed
+        if self.animation_timer >= 1:
+            self.animation_timer = 0
+            self.current_frame = (self.current_frame + 1) % len(self.sprites)
+
+    def draw(self, screen, player_pos):
+        # Calcular el ángulo hacia el jugador
+        dx = player_pos[0] - self.rect.centerx
+        dy = player_pos[1] - self.rect.centery
+        angle = math.degrees(math.atan2(-dy, dx))  # -dy porque el eje Y está invertido
+
+        # Rotar el sprite del enemigo
+        rotated_sprite = pygame.transform.rotate(self.sprites[self.current_frame], angle)
+        rotated_rect = rotated_sprite.get_rect(center=self.rect.center)
+
+        # Dibujar sprite rotado
+        screen.blit(rotated_sprite, rotated_rect)
+
+        # Dibujar barra de vida
+        pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
 
     def take_damage(self):
         """Reduce la vida del enemigo y devuelve True si muere."""
@@ -39,12 +69,6 @@ class Enemy:
                 if self.take_damage():
                     return True
         return False
-
-
-    def draw(self, screen):
-        pygame.draw.rect(screen, (255, 0, 0), self.rect)
-        # Dibujar barra de vida
-        pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
 
 
 class EnemyDistance(Enemy):
