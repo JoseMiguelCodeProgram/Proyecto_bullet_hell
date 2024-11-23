@@ -12,7 +12,7 @@ class Enemy:
 
         # Animación del enemigo
         self.sprites = [
-            pygame.transform.scale(pygame.image.load(f"./assets/enemy/enemy_simple_{i}.png"), (50, 50))
+            pygame.transform.scale(pygame.image.load(f"./assets/enemy/enemy_simple_{i}.png"), (100, 100))
             for i in range(1, 6)
         ]
         self.current_frame = 0
@@ -111,8 +111,8 @@ class EnemyDistance(Enemy):
             if bullet.is_out_of_bounds(WIDTH, HEIGHT):
                 self.bullets.remove(bullet)
 
-    def draw(self, screen):
-        pygame.draw.rect(screen, (255, 0, 0), self.rect)
+    def draw(self, screen, player_pos):
+        super().draw(screen, player_pos)
         for bullet in self.bullets:
             bullet.draw(screen)
             
@@ -165,8 +165,8 @@ class EnemyShotgun(Enemy):
             if bullet.is_out_of_bounds(WIDTH, HEIGHT):
                 self.bullets.remove(bullet)
 
-    def draw(self, screen):
+    def draw(self, screen, player_pos):
         """Dibuja al enemigo y sus balas."""
-        super().draw(screen)  # Dibujar el enemigo
+        super().draw(screen, player_pos)  # Dibujar el enemigo
         for bullet in self.bullets:
             bullet.draw(screen)  # Dibujar las balas

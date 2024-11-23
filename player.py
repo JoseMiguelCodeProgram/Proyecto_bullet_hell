@@ -60,20 +60,21 @@ class Player:
         dx = mouse_x - self.rect.centerx
         dy = mouse_y - self.rect.centery
         angle = math.degrees(math.atan2(-dy, dx))  # -dy porque el eje Y está invertido
-    
+
         # Rotar el sprite del jugador
         rotated_sprite = pygame.transform.rotate(self.sprites[self.current_frame], angle)
         rotated_rect = rotated_sprite.get_rect(center=self.rect.center)
-    
+
         # Dibujar sprite rotado
         screen.blit(rotated_sprite, rotated_rect)
-    
+
         # Dibujar barra de vida
         pygame.draw.rect(screen, (0, 0, 255), (self.rect.x, self.rect.y - 10, player_size * (self.health / 10), 5))
-    
+
         # Dibujar las balas
         for bullet in self.bullets:
             bullet.draw(screen)
+
 
 
 
@@ -158,3 +159,9 @@ class Player:
     def switch_weapon(self):
         """Cambiar al siguiente arma disponible."""
         self.current_weapon_index = (self.current_weapon_index + 1) % len(self.weapons)
+
+    def rotate_to_mouse(self, mouse_pos):
+        dx = mouse_pos[0] - self.rect.centerx
+        dy = mouse_pos[1] - self.rect.centery
+        angle = math.degrees(math.atan2(dy, dx))  # -dy porque el eje Y está invertido
+        self.sprites = [pygame.transform.rotate(sprite, angle) for sprite in self.sprites]

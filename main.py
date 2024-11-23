@@ -9,7 +9,7 @@ import random
 pygame.init()
 
 # Configurar pantalla completa
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
 # Cargar la imagen de fondo
@@ -24,6 +24,10 @@ if menu_action == "exit":
 
 # Inicialización del jugador y lista de enemigos
 player = Player(WIDTH // 2, HEIGHT // 2)
+# Obtener la posición inicial del mouse
+initial_mouse_pos = pygame.mouse.get_pos()
+player.rotate_to_mouse(initial_mouse_pos)
+
 enemies = []
 
 # Temporizador para generar enemigos
