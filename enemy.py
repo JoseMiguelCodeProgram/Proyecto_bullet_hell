@@ -13,7 +13,7 @@ class Enemy:
         # Animación del enemigo
         self.sprites = [
             pygame.transform.scale(pygame.image.load(f"./assets/enemy/enemy_simple_{i}.png"), (100, 100))
-            for i in range(1, 6)
+            for i in range(1, 9)
         ]
         self.current_frame = 0
         self.animation_speed = 0.1
@@ -47,6 +47,12 @@ class Enemy:
         rotated_sprite = pygame.transform.rotate(self.sprites[self.current_frame], angle)
         rotated_rect = rotated_sprite.get_rect(center=self.rect.center)
 
+        shadow_color = (0, 100, 50, 100)  # Gris oscuro con transparencia
+        shadow_surface = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        pygame.draw.ellipse(screen, (0, 100, 50), (self.rect.x, self.rect.y + self.rect.height // 4, self.rect.width, self.rect.height // 2))
+
+        screen.blit(shadow_surface, (self.rect.x, self.rect.y + self.rect.height//4))
+        
         # Dibujar sprite rotado
         screen.blit(rotated_sprite, rotated_rect)
 
@@ -59,16 +65,13 @@ class Enemy:
         return self.health <= 0
     
     def check_collision_with_bullets(self, bullets):
-        """
-        Verifica si el enemigo colisiona con alguna bala y reduce su salud.
-        Retorna True si el enemigo muere.
-        """
         for bullet in bullets:
-            if self.rect.collidepoint(bullet.x, bullet.y):  # Extraer coordenadas de la bala
-                bullets.remove(bullet)  # Eliminar la bala que colisiona
+            if self.rect.collidepoint(bullet.x, bullet.y):
+                bullets.remove(bullet)
                 if self.take_damage():
                     return True
         return False
+
 
 
 class EnemyDistance(Enemy):
@@ -77,6 +80,10 @@ class EnemyDistance(Enemy):
         self.bullets = []
         self.reload_time = 1000  # Tiempo de recarga (en milisegundos)
         self.last_shot_time = 0  # Tiempo del último disparo
+        self.sprites = [
+            pygame.transform.scale(pygame.image.load(f"./assets/enemy_distance/enemy_distance_{i}.png"), (100, 100))
+            for i in range(1, 5)
+        ]
 
     def shoot(self, player_pos):
         current_time = pygame.time.get_ticks()
@@ -170,3 +177,54 @@ class EnemyShotgun(Enemy):
         super().draw(screen, player_pos)  # Dibujar el enemigo
         for bullet in self.bullets:
             bullet.draw(screen)  # Dibujar las balas
+
+
+
+class FinalBoss(Enemy):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.health = 50  # Salud alta
+        self.reload_time = 800
+        self.bullets = []
+        self.last_shot_time = 0
+    
+
+    def shoot(self, player_pos):
+        """Dispara múltiples balas hacia el jugador."""
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_shot_time >= self.reload_time:
+            self.last_shot_time = current_time
+
+            # Disparo tipo escopeta
+            for angle_offset in range(-30, 31, 15):
+                angle = math.atan2(
+                    player_pos[1] - self.rect.centery,
+                    player_pos[0] - self.rect.centerx,
+                ) + math.radians(angle_offset)
+                dx = math.cos(angle)
+                dy = math.sin(angle)
+                new_bullet = Bullet(
+                    x=self.rect.centerx,
+                    y=self.rect.centery,
+                    dx=dx,
+                    dy=dy,
+                    speed=7,
+                    color=(200, 50, 50),
+                    damage=3,
+                )
+                self.bullets.append(new_bullet)
+
+    def update(self, player_pos):
+        """Movimiento más lento y disparo constante."""
+        super().update(player_pos)
+        self.shoot(player_pos)
+
+    def draw(self, screen, player_pos):
+        """Dibuja al jefe con una barra de salud extendida."""
+        super().draw(screen, player_pos)
+        pygame.draw.rect(
+            screen,
+            (255, 0, 0),  # Color rojo para la barra de salud
+            (self.rect.x, self.rect.y - 20, 100 * (self.health / 50), 10)  # Barra extendida
+        )
+

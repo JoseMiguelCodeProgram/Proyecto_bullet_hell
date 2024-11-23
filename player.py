@@ -65,6 +65,12 @@ class Player:
         rotated_sprite = pygame.transform.rotate(self.sprites[self.current_frame], angle)
         rotated_rect = rotated_sprite.get_rect(center=self.rect.center)
 
+        # Dibujar la sombra
+        shadow_color = (0, 150, 50, 100)  # Gris oscuro con transparencia
+        shadow_surface = pygame.Surface((player_size, player_size), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow_surface, shadow_color, (0, 0, player_size, player_size))
+        screen.blit(shadow_surface, (self.rect.x, self.rect.y + player_size//4))
+        
         # Dibujar sprite rotado
         screen.blit(rotated_sprite, rotated_rect)
 

@@ -1,4 +1,5 @@
 import pygame
+import math
 
 class BulletType:
     NORMAL = "normal"
@@ -25,3 +26,4 @@ class Bullet:
 
     def is_out_of_bounds(self, width, height):
         return self.x < 0 or self.x > width or self.y < 0 or self.y > height
+
