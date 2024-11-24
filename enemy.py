@@ -7,7 +7,7 @@ from bullet import Bullet, BulletType
 class Enemy:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, 50, 50)
-        self.speed = random.uniform(2.0, 6.0)
+        self.speed = random.uniform(8.0, 10.0)
         self.health = random.randint(3, 6)
 
         # Animación del enemigo
@@ -20,14 +20,18 @@ class Enemy:
         self.animation_timer = 0
 
         self.angle = 0  # Ángulo inicial hacia el jugador
-        
+
+        # Lista para almacenar las balas disparadas
+        self.bullets = []
+
     def set_angle_to_player(self, player_pos):
         """Configura el ángulo hacia el jugador."""
         dx = player_pos[0] - self.rect.centerx
         dy = player_pos[1] - self.rect.centery
         self.angle = math.degrees(math.atan2(-dy, dx))  # Calcula el ángulo inicial hacia el jugador
-    
+
     def update(self, player_pos):
+        # Movimiento hacia el jugador
         dx = player_pos[0] - self.rect.centerx
         dy = player_pos[1] - self.rect.centery
         distance = math.sqrt(dx ** 2 + dy ** 2)
@@ -35,7 +39,6 @@ class Enemy:
             dx /= distance
             dy /= distance
 
-        # Movimiento
         self.rect.x += dx * self.speed
         self.rect.y += dy * self.speed
 
@@ -44,6 +47,13 @@ class Enemy:
         if self.animation_timer >= 1:
             self.animation_timer = 0
             self.current_frame = (self.current_frame + 1) % len(self.sprites)
+
+        # Actualizar las balas
+        for bullet in self.bullets:
+            bullet.update()
+
+        # Eliminar balas fuera de la pantalla
+        self.bullets = [bullet for bullet in self.bullets if not bullet.is_out_of_bounds(800, 600)]  # Ajusta el tamaño de la pantalla
 
     def draw(self, screen, player_pos):
         # Calcular el ángulo hacia el jugador
@@ -65,20 +75,45 @@ class Enemy:
             (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5),
         )
 
+        # Dibujar las balas
+        for bullet in self.bullets:
+            bullet.draw(screen)
 
+    def shoot(self, target_pos):
+        """Crea una bala disparada hacia la posición del jugador."""
+        dx = target_pos[0] - self.rect.centerx
+        dy = target_pos[1] - self.rect.centery
+        distance = math.sqrt(dx ** 2 + dy ** 2)
+        if distance != 0:
+            dx /= distance
+            dy /= distance
+
+        new_bullet = Bullet(
+            x=self.rect.centerx,
+            y=self.rect.centery,
+            dx=dx,
+            dy=dy,
+            speed=5,
+            color=(255, 0, 0),
+            damage=1,
+            bullet_type=BulletType.NORMAL,
+        )
+        self.bullets.append(new_bullet)
 
     def take_damage(self):
         """Reduce la vida del enemigo y devuelve True si muere."""
         self.health -= 1
         return self.health <= 0
-    
     def check_collision_with_bullets(self, bullets):
-        for bullet in bullets:
-            if self.rect.collidepoint(bullet.x, bullet.y):
-                bullets.remove(bullet)
-                if self.take_damage():
+        for bullet in bullets[:]:
+            if self.rect.colliderect(bullet.rect):
+                bullets.remove(bullet)  # Elimina la bala si colisiona
+                self.health -= bullet.damage
+                if self.health <= 0:
                     return True
         return False
+
+    
 
 
 
@@ -89,6 +124,7 @@ class EnemyDistance(Enemy):
         self.reload_time = 1000  # Tiempo de recarga (en milisegundos)
         self.last_shot_time = 0  # Tiempo del último disparo
         self.bullet_sprites = bullet_sprites["enemy"]  # Sprite de bala normal enemigo
+        self.speed = random.uniform(2.0, 6.0)
         self.sprites = [
             pygame.transform.scale(pygame.image.load(f"./assets/enemy_distance/enemy_distance_{i}.png"), (100, 100))
             for i in range(1, 5)
@@ -107,6 +143,7 @@ class EnemyDistance(Enemy):
             if distance != 0:
                 dx /= distance
                 dy /= distance
+
             
             # Crear una nueva bala con sprites
             new_bullet = Bullet(
@@ -118,17 +155,20 @@ class EnemyDistance(Enemy):
                 color=(255, 0, 0),  # Este color es redundante si usas sprites
                 damage=1,
                 bullet_type=BulletType.NORMAL,
-                sprites=self.bullet_sprites  # Pasar sprites
+                sprites=self.bullet_sprites,  # Pasar sprites
+                size=30
             )
             self.bullets.append(new_bullet)
 
+    def check_collision_with_bullets(self, bullets):
+        for bullet in bullets[:]:
+            if self.rect.colliderect(bullet.rect):
+                bullets.remove(bullet)  # Elimina la bala si colisiona
+                self.health -= bullet.damage
+                if self.health <= 0:
+                    return True
+        return False
 
-    def update_bullets(self):
-        """Actualizar las balas disparadas por el enemigo."""
-        for bullet in self.bullets[:]:
-            bullet.update()
-            if bullet.is_out_of_bounds(WIDTH, HEIGHT):
-                self.bullets.remove(bullet)
 
     def draw(self, screen, player_pos):
         super().draw(screen, player_pos)
@@ -136,6 +176,7 @@ class EnemyDistance(Enemy):
             bullet.draw(screen)
             
         pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
+    
 
 
 class EnemyShotgun(Enemy):
@@ -144,7 +185,8 @@ class EnemyShotgun(Enemy):
         self.reload_time = random.randint(1000, 1500)  # Tiempo de recarga más largo
         self.bullets = []
         self.last_shot_time = 0
-        self.bullet_speed = 7  # Velocidad de las balas
+        self.speed = random.uniform(2.0, 6.0)
+        self.bullet_speed = 5  # Velocidad de las balas
         self.bullet_count = 5  # Número de balas disparadas
         self.spread_angle = 45  # Ángulo total del abanico en grados
         self.bullet_sprites = bullet_sprites["enemy_shotgun"]  # Sprites específicos de bala
@@ -182,7 +224,8 @@ class EnemyShotgun(Enemy):
                     color=(255, 150, 0),  # Color opcional si no hay sprites
                     damage=2,  # Daño de cada bala de escopeta
                     bullet_type=BulletType.SHOTGUN,
-                    sprites=self.bullet_sprites  # Pasar los sprites de bala
+                    sprites=self.bullet_sprites,  # Pasar los sprites de bala
+                    size=30
                 )
                 self.bullets.append(new_bullet)
 
@@ -209,13 +252,23 @@ class EnemyShotgun(Enemy):
         # Dibujar las balas del shotgun
         for bullet in self.bullets:
             bullet.draw(screen)
+    def check_collision_with_bullets(self, bullets):
+        for bullet in bullets[:]:
+            if self.rect.colliderect(bullet.rect):
+                bullets.remove(bullet)  # Elimina la bala si colisiona
+                self.health -= bullet.damage
+                if self.health <= 0:
+                    return True
+        return False
+
 
 class FinalBoss(Enemy):
     def __init__(self, x, y, bullet_sprites):
         super().__init__(x, y)
-        self.health = 50  # Salud alta
+        self.health = 200  # Salud alta
         self.reload_time = 400  # Dispara rápido
         self.bullets = []
+        self.speed = random.uniform(4.0, 6.0)
         self.last_shot_time = 0
         self.bullet_sprites = bullet_sprites["enemy_shotgun"]  # Sprites para las balas tipo SHOTGUN
 
@@ -223,7 +276,6 @@ class FinalBoss(Enemy):
         self.sprite = pygame.transform.scale(
             pygame.image.load("./assets/enemy_boss/enemy_boss.png"), (150, 150)
         )
-
 
     def shoot(self, player_pos):
         """Dispara múltiples balas tipo SHOTGUN hacia el jugador."""
@@ -250,10 +302,10 @@ class FinalBoss(Enemy):
                     color=(255, 50, 50),  # Solo para el caso en que no haya sprites
                     damage=5,  # Más daño porque es el jefe
                     bullet_type=BulletType.SHOTGUN,  # Usar el tipo SHOTGUN
-                    sprites=self.bullet_sprites  # Pasar sprites animados
+                    sprites=self.bullet_sprites,  # Pasar sprites animados
+                    size=40
                 )
                 self.bullets.append(new_bullet)
-
 
     def update(self, player_pos, width, height):
         """Actualiza el movimiento del jefe, dispara y elimina balas fuera de pantalla."""
@@ -265,6 +317,16 @@ class FinalBoss(Enemy):
             bullet.update()
             if bullet.is_out_of_bounds(width, height):  # Eliminar balas fuera de pantalla
                 self.bullets.remove(bullet)
+
+    def check_collision_with_bullets(self, bullets):
+        for bullet in bullets[:]:
+            if self.rect.colliderect(bullet.rect):
+                bullets.remove(bullet)  # Elimina la bala si colisiona
+                self.health -= bullet.damage
+                if self.health <= 0:
+                    return True
+        return False
+
 
     def draw(self, screen, player_pos):
         """Dibuja al jefe con rotación, barra de salud y sus balas."""
@@ -284,7 +346,7 @@ class FinalBoss(Enemy):
         pygame.draw.rect(
             screen,
             (255, 0, 0),  # Color rojo para la barra de salud
-            (self.rect.x, self.rect.y - 20, 100 * (self.health / 50), 10),  # Barra extendida
+            (self.rect.x, self.rect.y - 20, 100 * (self.health / 200), 10),  # Barra extendida
         )
 
         # Dibujar las balas del jefe

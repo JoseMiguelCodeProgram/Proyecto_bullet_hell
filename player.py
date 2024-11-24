@@ -9,6 +9,7 @@ class Player:
         self.rect = pygame.Rect(x, y, player_size, player_size)
         self.bullets = []
         self.health = 10
+        self.max_health = 10  # Salud máxima
         self.invulnerable = False
         self.invulnerability_time = 0
         self.last_hit_time = 0
@@ -105,7 +106,8 @@ class Player:
                 color=(255, 255, 0),
                 damage=1,
                 bullet_type=BulletType.NORMAL,
-                sprites=self.bullet_sprites["normal"]
+                sprites=self.bullet_sprites["normal"],
+                size=30
             )
             self.bullets.append(new_bullet)
     
@@ -127,7 +129,8 @@ class Player:
                     color=(255, 100, 0),
                     damage=2,
                     bullet_type=BulletType.SHOTGUN,
-                    sprites=self.bullet_sprites["shotgun"]
+                    sprites=self.bullet_sprites["shotgun"],
+                    size=30
                 )
                 self.bullets.append(new_bullet)
 
