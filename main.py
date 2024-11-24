@@ -29,6 +29,10 @@ clock = pygame.time.Clock()
 
 # Cargar la imagen de fondo
 fondo_juego = pygame.image.load(resource_path("assets/fondo_juego.jpg"))
+
+# Escalar el fondo al tamaño de la pantalla
+fondo_juego = pygame.transform.scale(fondo_juego, (WIDTH, HEIGHT))
+
 # Crear una superficie oscura usando BLEND_RGBA_MULT
 filtro_oscuro = pygame.Surface((WIDTH, HEIGHT))
 filtro_oscuro.fill((250, 250, 250))  # Ajusta los valores (0-255) para controlar el nivel de oscurecimiento
@@ -40,10 +44,11 @@ screen.blit(filtro_oscuro, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
 
 # Cargar música de fondo
-pygame.mixer.music.load("./assets/audios/musica.mp3")  # Reemplaza con el nombre de tu archivo de música
+musica_path = resource_path("./assets/audios/musica.mp3")
+pygame.mixer.music.load(musica_path)
 
 # Cargar efecto de disparo
-sonido_disparo = pygame.mixer.Sound("./assets/audios/disparo.ogg")  # Cambia a un archivo OGG o WAV
+sonido_disparo = pygame.mixer.Sound(resource_path("assets/audios/disparo.ogg")) # Cambia a un archivo OGG o WAV
 sonido_disparo.set_volume(0.5)  # Ajustar volumen si es necesario
 
 # Mostrar el menú principal
@@ -55,7 +60,7 @@ if menu_action == "exit":
 bullet_sprites = load_bullet_sprites()
 current_wave = 1
 total_waves = 6  # 5 normales + 1 con el jefe final
-wave_enemies_count = 5  # Número base de enemigos
+wave_enemies_count = 6  # Número base de enemigos
 enemies_to_spawn = []
 wave_cleared = False
 wave_transition_start_time = None
@@ -124,7 +129,7 @@ enemies = []
 
 # Temporizador para generar enemigos
 enemy_spawn_timer = 0
-enemy_spawn_interval = 1400  # Cada 1 segundos
+enemy_spawn_interval = 1150  # Cada 1 segundos
 
 
 # Estado inicial del juego
@@ -306,20 +311,78 @@ while running:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                menu_action = show_menu(screen)
-                if menu_action == "exit":
-                    running = False
-                else:
-                    current_wave = 1
-                    start_wave(current_wave, player_pos)
-                    game_state = "playing"
-                    musica_jugando = False
+                # Cambiar al submenú de opciones post-victoria
+                game_state = "post_victory"
+                selected_option = 0  # Opción seleccionada inicialmente
 
+        # Mostrar mensaje de victoria
         screen.blit(fondo_juego, (0, 0))
         font = pygame.font.Font(None, 74)
         text = font.render("¡Victoria! Presiona Enter para continuar.", True, (255, 255, 255))
         screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
         pygame.display.flip()
+
+    elif game_state == "post_victory":
+        # Opciones del submenú
+        options = ["Nueva partida", "Volver al menú principal"]
+        option_rects = []  # Guardará las áreas de las opciones para detectar clics
+    
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEMOTION:
+                # Detectar si el mouse está sobre alguna opción
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                for i, rect in enumerate(option_rects):
+                    if rect.collidepoint(mouse_x, mouse_y):
+                        selected_option = i
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Botón izquierdo del mouse
+                # Activar la opción seleccionada con un clic
+                if selected_option == 0:  # Nueva partida
+                    current_wave = 1
+                    player.reset_health()  # Restablecer vida del jugador
+                    player.reset_position(WIDTH // 2, HEIGHT // 2)  # Resetear posición
+                    start_wave(current_wave, player_pos)
+                    game_state = "playing"
+                    musica_jugando = False
+                elif selected_option == 1:  # Volver al menú principal
+                    menu_action = show_menu(screen)
+                    if menu_action == "exit":
+                        running = False
+                    elif menu_action == "start":
+                        # Reiniciar variables si comienza desde el menú principal
+                        enemies.clear()
+                        enemies_to_spawn.clear()
+                        current_wave = 0
+                        wave_cleared = False
+                        final_boss = None
+                        player.reset_health()
+                        player.reset_position(WIDTH // 2, HEIGHT // 2)
+                        game_state = "playing"
+    
+        # Dibujar el submenú
+        screen.blit(fondo_juego, (0, 0))
+        font = pygame.font.Font(None, 74)
+        title = font.render("¡Victoria!", True, (255, 255, 255))
+        screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 4))
+    
+        # Dibujar opciones y calcular rectángulos
+        option_rects.clear()
+        for i, option in enumerate(options):
+            color = (255, 255, 255) if i == selected_option else (200, 200, 200)
+            text = font.render(option, True, color)
+            text_x = WIDTH // 2 - text.get_width() // 2
+            text_y = HEIGHT // 2 + i * 50
+            screen.blit(text, (text_x, text_y))
+    
+            # Guardar el rectángulo para detectar clics
+            rect = pygame.Rect(text_x, text_y, text.get_width(), text.get_height())
+            option_rects.append(rect)
+    
+        pygame.display.flip()
+
+
+
 
 
     elif game_state == "death_menu":

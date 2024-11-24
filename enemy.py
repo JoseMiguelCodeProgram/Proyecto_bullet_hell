@@ -3,6 +3,18 @@ import math
 import random
 from settings import WIDTH, HEIGHT
 from bullet import Bullet, BulletType
+import os
+import sys
+
+def resource_path(relative_path):
+    try:
+        # Cuando se ejecuta como ejecutable
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Cuando se ejecuta en el entorno de desarrollo
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 
 class Enemy:
     def __init__(self, x, y):
@@ -12,9 +24,13 @@ class Enemy:
 
         # Animación del enemigo
         self.sprites = [
-            pygame.transform.scale(pygame.image.load(f"./assets/enemy/enemy_simple_{i}.png"), (150, 150))
-            for i in range(1, 9)
+            pygame.transform.scale(
+                pygame.image.load(resource_path(f"./assets/enemy/enemy_simple_{i}.png")),
+                (150, 150)
+            )
+            for i in range(1, 9)  # Asumiendo que tienes 5 imágenes (jugador_1.png, ..., jugador_5.png)
         ]
+        
         self.current_frame = 0
         self.animation_speed = 0.1
         self.animation_timer = 0
@@ -126,10 +142,13 @@ class EnemyDistance(Enemy):
         self.bullet_sprites = bullet_sprites["enemy"]  # Sprite de bala normal enemigo
         self.speed = random.uniform(2.0, 6.0)
         self.sprites = [
-            pygame.transform.scale(pygame.image.load(f"./assets/enemy_distance/enemy_distance_{i}.png"), (100, 100))
-            for i in range(1, 5)
+            pygame.transform.scale(
+                pygame.image.load(resource_path(f"./assets/enemy_distance/enemy_distance_{i}.png")),
+                (100, 100)
+            )
+            for i in range(1, 5)  # Asumiendo que tienes 5 imágenes (jugador_1.png, ..., jugador_5.png)
         ]
-
+        
 
     def shoot(self, player_pos):
         current_time = pygame.time.get_ticks()
@@ -191,8 +210,11 @@ class EnemyShotgun(Enemy):
         self.spread_angle = 45  # Ángulo total del abanico en grados
         self.bullet_sprites = bullet_sprites["enemy_shotgun"]  # Sprites específicos de bala
         self.sprites = [
-            pygame.transform.scale(pygame.image.load(f"./assets/enemy_shotgun/enemy_shotgun_{i}.png"), (100, 100))
-            for i in range(1, 7)
+            pygame.transform.scale(
+                pygame.image.load(resource_path(f"./assets/enemy_shotgun/enemy_shotgun_{i}.png")),
+                (100, 100)
+            )
+            for i in range(1, 7)  # Asumiendo que tienes 5 imágenes (jugador_1.png, ..., jugador_5.png)
         ]
         self.current_frame = 0  # Animación del enemigo
         self.animation_speed = 0.1
@@ -273,9 +295,20 @@ class FinalBoss(Enemy):
         self.bullet_sprites = bullet_sprites["enemy_shotgun"]  # Sprites para las balas tipo SHOTGUN
 
         # Cargar el sprite único del jefe
-        self.sprite = pygame.transform.scale(
-            pygame.image.load("./assets/enemy_boss/enemy_boss.png"), (150, 150)
-        )
+        try:
+            self.sprites = [
+                pygame.transform.scale(
+                    pygame.image.load(resource_path("./assets/enemy_boss/enemy_boss.png")),
+                    (150, 150)
+                )
+            ]
+        except FileNotFoundError:
+            print("Error: El sprite del jefe final no se encontró.")
+            self.sprites = []
+
+        # Inicializar el rectángulo para colisiones
+        self.rect = self.sprites[0].get_rect(topleft=(x, y)) if self.sprites else pygame.Rect(x, y, 150, 150)
+
 
     def shoot(self, player_pos):
         """Dispara múltiples balas tipo SHOTGUN hacia el jugador."""
@@ -330,13 +363,19 @@ class FinalBoss(Enemy):
 
     def draw(self, screen, player_pos):
         """Dibuja al jefe con rotación, barra de salud y sus balas."""
+        if not self.sprites:
+            return  # Si no hay sprites, no dibujar nada
+
+        # Usar el primer sprite
+        base_sprite = self.sprites[0]
+
         # Calcular el ángulo hacia el jugador
         dx = player_pos[0] - self.rect.centerx
         dy = player_pos[1] - self.rect.centery
         angle = math.degrees(math.atan2(-dy, dx))  # -dy porque el eje Y está invertido
 
         # Rotar el sprite único
-        rotated_sprite = pygame.transform.rotate(self.sprite, angle)
+        rotated_sprite = pygame.transform.rotate(base_sprite, angle)
         rotated_rect = rotated_sprite.get_rect(center=self.rect.center)
 
         # Dibujar el sprite rotado

@@ -1,5 +1,16 @@
 import pygame
 from settings import WIDTH, HEIGHT
+import os
+import sys
+
+def resource_path(relative_path):
+    try:
+        # Cuando se ejecuta desde un ejecutable
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Cuando se ejecuta en el entorno de desarrollo
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 pygame.init()
 
@@ -18,7 +29,7 @@ class Menu:
         self.show_instructions = False
 
         # Cargar la imagen de fondo
-        self.background = pygame.image.load("./assets/Background.jpg")
+        self.background = pygame.image.load(resource_path('assets/Background.jpg'))
         # Ajustar la imagen para que cubra toda la pantalla
         self.background = pygame.transform.scale(self.background, (WIDTH, HEIGHT))
 

@@ -1,5 +1,17 @@
 import pygame
 from settings import WIDTH, HEIGHT
+import sys
+import os
+
+# Función para obtener la ruta absoluta de los archivos
+def resource_path(relative_path):
+    try:
+        # Cuando se ejecuta desde el ejecutable
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Cuando se ejecuta desde el entorno normal
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 class DeathMenu:
     def __init__(self, screen):
@@ -7,9 +19,8 @@ class DeathMenu:
         self.font = pygame.font.Font(None, 70)
         self.options = ["Reintentar", "Menú Principal"]
         self.selected_option = 0
-        
         # Cargar y escalar la imagen de fondo
-        self.background = pygame.image.load("./assets/game_over.jpg")
+        self.background = pygame.image.load(resource_path('./assets/game_over.jpg'))
         self.background = pygame.transform.scale(self.background, (WIDTH, HEIGHT))
 
     def draw(self):

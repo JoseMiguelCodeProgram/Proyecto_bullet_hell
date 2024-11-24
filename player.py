@@ -3,13 +3,26 @@ import math
 import random
 from settings import WIDTH, HEIGHT, player_size
 from bullet import Bullet, BulletType
+import os
+import sys
+
+def resource_path(relative_path):
+    try:
+        # Cuando se ejecuta como ejecutable
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Cuando se ejecuta en el entorno de desarrollo
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
 
 class Player:
     def __init__(self, x, y, bullet_sprites):
         self.rect = pygame.Rect(x, y, player_size, player_size)
         self.bullets = []
-        self.health = 10
         self.max_health = 10  # Salud máxima
+        self.health = self.max_health
         self.invulnerable = False
         self.invulnerability_time = 0
         self.last_hit_time = 0
@@ -20,14 +33,19 @@ class Player:
 
         # Animación del jugador
         self.sprites = [
-            pygame.transform.scale(pygame.image.load(f"./assets/player/jugador_{i}.png"), (player_size, player_size))
+            pygame.transform.scale(
+                pygame.image.load(resource_path(f"assets/player/jugador_{i}.png")),
+                (player_size, player_size)
+            )
             for i in range(1, 6)
-        ]
+]
         self.current_frame = 0
         self.animation_speed = 0.1
         self.animation_timer = 0
 
-
+    def reset_health(self):
+        self.health = self.max_health
+        
     def update(self):
         # Movimiento
         keys = pygame.key.get_pressed()
