@@ -81,10 +81,6 @@ class Player:
         for bullet in self.bullets:
             bullet.draw(screen)
 
-
-
-
-
     def shoot(self, mouse_x, mouse_y):
         current_weapon = self.weapons[self.current_weapon_index]
 

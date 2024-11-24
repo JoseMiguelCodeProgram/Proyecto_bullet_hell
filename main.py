@@ -22,7 +22,7 @@ if menu_action == "exit":
     pygame.quit()
     exit()
 # Variables para las oleadas
-current_wave = 6
+current_wave = 1
 total_waves = 6  # 5 normales + 1 con el jefe final
 wave_enemies_count = 1  # Número base de enemigos
 enemies_to_spawn = []
@@ -31,15 +31,9 @@ wave_transition_start_time = None
 wave_transition_duration = 2000  # Duración en milisegundos (2 segundos)
 
 
-def start_wave(wave_number):
+def start_wave(wave_number, player_pos):
     """Inicia una nueva oleada basada en el número de la oleada."""
     global enemies_to_spawn, wave_enemies_count
-    enemies_to_spawn.clear()  # Asegurar que la lista esté vacía
-    num_enemies = wave_enemies_count + (wave_number - 1) * 3  # Incrementa enemigos por oleada
-
-def start_wave(wave_number):
-    """Inicia una nueva oleada basada en el número de la oleada."""
-    global enemies_to_spawn, wave_enemies_count, final_boss
     enemies_to_spawn.clear()  # Asegurar que la lista esté vacía
     num_enemies = wave_enemies_count + (wave_number - 1) * 3  # Incrementa enemigos por oleada
 
@@ -55,13 +49,12 @@ def start_wave(wave_number):
         elif edge == "right":
             x, y = WIDTH, random.randint(0, HEIGHT)
 
-        if wave_number < 6:
-            enemies_to_spawn.append(random.choice([Enemy(x, y), EnemyDistance(x, y), EnemyShotgun(x, y)]))
-        elif wave_number == 6:
-            # En la oleada del jefe, continuar generando enemigos adicionales
-            enemies_to_spawn.append(random.choice([Enemy(x, y), EnemyDistance(x, y), EnemyShotgun(x, y)]))
+        # Crear enemigo aleatorio y rotarlo hacia el jugador
+        enemy = random.choice([Enemy(x, y), EnemyDistance(x, y), EnemyShotgun(x, y)])
+        enemy.set_angle_to_player(player_pos)  # Configura el ángulo hacia el jugador
+        enemies_to_spawn.append(enemy)
 
-    # Generar el jefe solo una vez en la última oleada
+    # Generar el jefe en la última oleada
     if wave_number == 6:
         edge = random.choice(["top", "bottom", "left", "right"])
         if edge == "top":
@@ -72,7 +65,11 @@ def start_wave(wave_number):
             x, y = 0, random.randint(0, HEIGHT)
         elif edge == "right":
             x, y = WIDTH, random.randint(0, HEIGHT)
+        
+        # Crear y añadir al jefe final
         final_boss = FinalBoss(x, y)
+        final_boss.set_angle_to_player(player_pos)
+        enemies_to_spawn.append(final_boss)
 
 
 
@@ -85,13 +82,12 @@ def draw_wave_message(screen, wave_number):
     screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - text.get_height() // 2))
 
 
-start_wave(current_wave)  # Comenzar la primera oleada
-
 # Inicialización del jugador y lista de enemigos
 player = Player(WIDTH // 2, HEIGHT // 2)
 # Obtener la posición inicial del mouse
 initial_mouse_pos = pygame.mouse.get_pos()
 player.rotate_to_mouse(initial_mouse_pos)
+start_wave(current_wave, player.rect.center)
 
 enemies = []
 
@@ -174,21 +170,17 @@ while running:
         player_pos = player.rect.center
 
         for enemy in enemies[:]:
-            enemy.update(player_pos)
+            if isinstance(enemy, FinalBoss):
+                enemy.update(player_pos, WIDTH, HEIGHT)
+            else:
+                enemy.update(player_pos)
+
             if isinstance(enemy, (EnemyDistance, EnemyShotgun)):
                 enemy.shoot(player_pos)
                 enemy.update_bullets()
+
             if enemy.check_collision_with_bullets(player.bullets):
                 enemies.remove(enemy)
-
-        # Actualizar y dibujar al jefe
-        if final_boss is not None:
-            final_boss.update(player_pos)
-            final_boss.draw(screen, player_pos)
-            if final_boss.check_collision_with_bullets(player.bullets):
-                if final_boss.take_damage():
-                    final_boss = None  # Jefe derrotado
-                    game_state = "victory"  # Cambiar el estado a victoria
 
 
         # Verificar colisiones
@@ -204,6 +196,7 @@ while running:
         # Dibujar todo
         screen.blit(fondo_juego, (0, 0))  # Dibujar el fondo
         player.draw(screen)
+        
         for enemy in enemies:
             enemy.draw(screen, player.rect.center)
         pygame.display.flip()
@@ -216,14 +209,15 @@ while running:
         if current_time - wave_transition_start_time >= wave_transition_duration:
             # Finalizar la transición y comenzar la oleada
             game_state = "playing"
-            start_wave(current_wave)
+            start_wave(current_wave, player_pos)# Include player_pos here
+
         else:
             # Dibujar mensaje de la oleada
             screen.blit(fondo_juego, (0, 0))  # Dibujar el fondo
             draw_wave_message(screen, current_wave)
             pygame.display.update()  # Cambiado de flip() a update() para evitar interferencias con otras actualizaciones
             clock.tick(FPS)  # Mantener el framerate estable
-        
+            
         # Generar enemigos
         enemy_spawn_timer += clock.get_time()
         if enemy_spawn_timer >= enemy_spawn_interval:

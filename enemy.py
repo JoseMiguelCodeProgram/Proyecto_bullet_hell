@@ -12,13 +12,21 @@ class Enemy:
 
         # Animación del enemigo
         self.sprites = [
-            pygame.transform.scale(pygame.image.load(f"./assets/enemy/enemy_simple_{i}.png"), (100, 100))
+            pygame.transform.scale(pygame.image.load(f"./assets/enemy/enemy_simple_{i}.png"), (150, 150))
             for i in range(1, 9)
         ]
         self.current_frame = 0
         self.animation_speed = 0.1
         self.animation_timer = 0
 
+        self.angle = 0  # Ángulo inicial hacia el jugador
+        
+    def set_angle_to_player(self, player_pos):
+        """Configura el ángulo hacia el jugador."""
+        dx = player_pos[0] - self.rect.centerx
+        dy = player_pos[1] - self.rect.centery
+        self.angle = math.degrees(math.atan2(-dy, dx))  # Calcula el ángulo inicial hacia el jugador
+    
     def update(self, player_pos):
         dx = player_pos[0] - self.rect.centerx
         dy = player_pos[1] - self.rect.centery
@@ -41,23 +49,23 @@ class Enemy:
         # Calcular el ángulo hacia el jugador
         dx = player_pos[0] - self.rect.centerx
         dy = player_pos[1] - self.rect.centery
-        angle = math.degrees(math.atan2(-dy, dx))  # -dy porque el eje Y está invertido
+        angle = math.degrees(math.atan2(-dy, dx)) - 90  # Ajustar según orientación del sprite
 
         # Rotar el sprite del enemigo
         rotated_sprite = pygame.transform.rotate(self.sprites[self.current_frame], angle)
-        rotated_rect = rotated_sprite.get_rect(center=self.rect.center)
+        rotated_rect = rotated_sprite.get_rect(center=self.rect.center)  # Mantener el centro
 
-        shadow_color = (0, 100, 50, 100)  # Gris oscuro con transparencia
-        shadow_surface = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
-        pygame.draw.ellipse(screen, (0, 100, 50), (self.rect.x, self.rect.y + self.rect.height // 4, self.rect.width, self.rect.height // 2))
-
-        screen.blit(shadow_surface, (self.rect.x, self.rect.y + self.rect.height//4))
-        
         # Dibujar sprite rotado
-        screen.blit(rotated_sprite, rotated_rect)
+        screen.blit(rotated_sprite, rotated_rect.topleft)
 
         # Dibujar barra de vida
-        pygame.draw.rect(screen, (0, 255, 100), (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5))
+        pygame.draw.rect(
+            screen,
+            (0, 255, 100),
+            (self.rect.x, self.rect.y - 10, 50 * (self.health / 6), 5),
+        )
+
+
 
     def take_damage(self):
         """Reduce la vida del enemigo y devuelve True si muere."""
@@ -135,6 +143,13 @@ class EnemyShotgun(Enemy):
         self.bullet_speed = 7  # Velocidad de las balas
         self.bullet_count = 5  # Número de balas disparadas
         self.spread_angle = 45  # Ángulo total del abanico en grados
+        self.sprites = [
+            pygame.transform.scale(pygame.image.load(f"./assets/enemy_shotgun/enemy_shotgun_{i}.png"), (100, 100))
+            for i in range(1, 7)
+        ]
+        self.current_frame = 0  # Animación del enemigo
+        self.animation_speed = 0.1
+        self.animation_timer = 0
 
     def shoot(self, player_pos):
         current_time = pygame.time.get_ticks()
@@ -165,37 +180,47 @@ class EnemyShotgun(Enemy):
 
             self.last_shot_time = current_time
 
+    def update(self, player_pos):
+        """Actualiza el movimiento, las balas y la rotación."""
+        super().update(player_pos)  # Movimiento básico hacia el jugador
+        self.update_bullets()  # Actualizar las balas
+
     def update_bullets(self):
         """Actualizar las balas y eliminarlas si salen de la pantalla."""
         for bullet in self.bullets[:]:
-            bullet.update()
-            if bullet.is_out_of_bounds(WIDTH, HEIGHT):
+            bullet.update()  # Método de actualización de cada bala
+            if bullet.is_out_of_bounds(WIDTH, HEIGHT):  # Verificar si la bala salió de los límites
                 self.bullets.remove(bullet)
 
     def draw(self, screen, player_pos):
-        """Dibuja al enemigo y sus balas."""
-        super().draw(screen, player_pos)  # Dibujar el enemigo
+        """Dibuja al enemigo Shotgun con rotación y sus balas."""
+        # Llama al método `draw` de la clase base
+        super().draw(screen, player_pos)
+
+        # Dibujar las balas del shotgun
         for bullet in self.bullets:
-            bullet.draw(screen)  # Dibujar las balas
-
-
+            bullet.draw(screen)
 
 class FinalBoss(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.health = 50  # Salud alta
-        self.reload_time = 800
+        self.reload_time = 400  # Reducimos el tiempo para disparar más rápido (doble de velocidad)
         self.bullets = []
         self.last_shot_time = 0
-    
+
+        # Cargar el sprite único del jefe
+        self.sprite = pygame.transform.scale(
+            pygame.image.load("./assets/enemy_boss/enemy_boss.png"), (150, 150)
+        )  # Ajusta el tamaño según sea necesario
 
     def shoot(self, player_pos):
-        """Dispara múltiples balas hacia el jugador."""
+        """Dispara múltiples balas tipo SHOTGUN hacia el jugador."""
         current_time = pygame.time.get_ticks()
         if current_time - self.last_shot_time >= self.reload_time:
             self.last_shot_time = current_time
 
-            # Disparo tipo escopeta
+            # Disparo tipo escopeta: balas en un cono
             for angle_offset in range(-30, 31, 15):
                 angle = math.atan2(
                     player_pos[1] - self.rect.centery,
@@ -208,23 +233,45 @@ class FinalBoss(Enemy):
                     y=self.rect.centery,
                     dx=dx,
                     dy=dy,
-                    speed=7,
-                    color=(200, 50, 50),
-                    damage=3,
+                    speed=10,  # Velocidad personalizada
+                    color=(255, 50, 50),  # Color rojo para las balas del jefe
+                    damage=5,  # Más daño porque es el jefe
+                    bullet_type=BulletType.SHOTGUN  # Usar el tipo SHOTGUN
                 )
                 self.bullets.append(new_bullet)
 
-    def update(self, player_pos):
-        """Movimiento más lento y disparo constante."""
+    def update(self, player_pos, width, height):
+        """Actualiza el movimiento del jefe, dispara y elimina balas fuera de pantalla."""
         super().update(player_pos)
         self.shoot(player_pos)
 
+        # Actualizar posición de las balas
+        for bullet in self.bullets[:]:
+            bullet.update()
+            if bullet.is_out_of_bounds(width, height):  # Eliminar balas fuera de pantalla
+                self.bullets.remove(bullet)
+
     def draw(self, screen, player_pos):
-        """Dibuja al jefe con una barra de salud extendida."""
-        super().draw(screen, player_pos)
+        """Dibuja al jefe con rotación, barra de salud y sus balas."""
+        # Calcular el ángulo hacia el jugador
+        dx = player_pos[0] - self.rect.centerx
+        dy = player_pos[1] - self.rect.centery
+        angle = math.degrees(math.atan2(-dy, dx))  # -dy porque el eje Y está invertido
+
+        # Rotar el sprite único
+        rotated_sprite = pygame.transform.rotate(self.sprite, angle)
+        rotated_rect = rotated_sprite.get_rect(center=self.rect.center)
+
+        # Dibujar el sprite rotado
+        screen.blit(rotated_sprite, rotated_rect.topleft)
+
+        # Dibujar barra de salud extendida
         pygame.draw.rect(
             screen,
             (255, 0, 0),  # Color rojo para la barra de salud
-            (self.rect.x, self.rect.y - 20, 100 * (self.health / 50), 10)  # Barra extendida
+            (self.rect.x, self.rect.y - 20, 100 * (self.health / 50), 10),  # Barra extendida
         )
 
+        # Dibujar las balas del jefe
+        for bullet in self.bullets:
+            bullet.draw(screen)
