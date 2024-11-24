@@ -287,7 +287,7 @@ class EnemyShotgun(Enemy):
 class FinalBoss(Enemy):
     def __init__(self, x, y, bullet_sprites):
         super().__init__(x, y)
-        self.health = 200  # Salud alta
+        self.health = 230  # Salud alta
         self.reload_time = 400  # Dispara rápido
         self.bullets = []
         self.speed = random.uniform(4.0, 6.0)

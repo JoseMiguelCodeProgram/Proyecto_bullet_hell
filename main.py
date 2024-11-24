@@ -307,6 +307,11 @@ while running:
 
         
     elif game_state == "victory":
+        # Detener la música si sigue sonando
+        if musica_jugando:
+            pygame.mixer.music.stop()
+            musica_jugando = False  # Indicar que la música se detuvo
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -326,7 +331,28 @@ while running:
         # Opciones del submenú
         options = ["Nueva partida", "Volver al menú principal"]
         option_rects = []  # Guardará las áreas de las opciones para detectar clics
-    
+
+        # Dibujar el submenú y calcular rectángulos
+        screen.blit(fondo_juego, (0, 0))
+        font = pygame.font.Font(None, 74)
+        title = font.render("¡Victoria!", True, (255, 255, 255))
+        screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 4))
+
+        option_rects.clear()
+        for i, option in enumerate(options):
+            color = (255, 255, 255) if i == selected_option else (200, 200, 200)
+            text = font.render(option, True, color)
+            text_x = WIDTH // 2 - text.get_width() // 2
+            text_y = HEIGHT // 2 + i * 50
+            screen.blit(text, (text_x, text_y))
+
+            # Guardar el rectángulo para detectar clics
+            rect = pygame.Rect(text_x, text_y, text.get_width(), text.get_height())
+            option_rects.append(rect)
+
+        pygame.display.flip()
+
+        # Procesar eventos después de generar los rectángulos
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -344,7 +370,10 @@ while running:
                     player.reset_position(WIDTH // 2, HEIGHT // 2)  # Resetear posición
                     start_wave(current_wave, player_pos)
                     game_state = "playing"
-                    musica_jugando = False
+                    # Reiniciar música para el juego
+                    pygame.mixer.music.load("musica_juego.mp3")
+                    pygame.mixer.music.play(-1)
+                    musica_jugando = True
                 elif selected_option == 1:  # Volver al menú principal
                     menu_action = show_menu(screen)
                     if menu_action == "exit":
@@ -359,13 +388,19 @@ while running:
                         player.reset_health()
                         player.reset_position(WIDTH // 2, HEIGHT // 2)
                         game_state = "playing"
-    
+                        # Reiniciar música para el juego
+                        pygame.mixer.music.load("musica_juego.mp3")
+                        pygame.mixer.music.play(-1)
+                        musica_jugando = True
+
+
+
         # Dibujar el submenú
         screen.blit(fondo_juego, (0, 0))
         font = pygame.font.Font(None, 74)
         title = font.render("¡Victoria!", True, (255, 255, 255))
         screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 4))
-    
+
         # Dibujar opciones y calcular rectángulos
         option_rects.clear()
         for i, option in enumerate(options):
@@ -374,11 +409,11 @@ while running:
             text_x = WIDTH // 2 - text.get_width() // 2
             text_y = HEIGHT // 2 + i * 50
             screen.blit(text, (text_x, text_y))
-    
+
             # Guardar el rectángulo para detectar clics
             rect = pygame.Rect(text_x, text_y, text.get_width(), text.get_height())
             option_rects.append(rect)
-    
+
         pygame.display.flip()
 
 
