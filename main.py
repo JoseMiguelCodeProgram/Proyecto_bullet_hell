@@ -6,6 +6,19 @@ from menu import show_menu
 from death_menu import DeathMenu
 from resources import load_bullet_sprites
 import random
+import sys
+import os
+
+# Función para obtener la ruta absoluta de los archivos
+def resource_path(relative_path):
+    try:
+        # Cuando se ejecuta desde el ejecutable
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Cuando se ejecuta desde el entorno normal
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 
 pygame.init()
 pygame.mixer.pre_init(44100, -16, 2, 512)
@@ -15,9 +28,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
 # Cargar la imagen de fondo
-fondo_juego = pygame.image.load("./assets/fondo_juego.jpg")
-fondo_juego = pygame.transform.scale(fondo_juego, (WIDTH, HEIGHT))  # Ajustar al tamaño de la pantalla
-
+fondo_juego = pygame.image.load(resource_path("assets/fondo_juego.jpg"))
 # Crear una superficie oscura usando BLEND_RGBA_MULT
 filtro_oscuro = pygame.Surface((WIDTH, HEIGHT))
 filtro_oscuro.fill((250, 250, 250))  # Ajusta los valores (0-255) para controlar el nivel de oscurecimiento
