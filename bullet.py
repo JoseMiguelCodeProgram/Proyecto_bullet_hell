@@ -54,7 +54,7 @@ class Bullet:
             pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), 5)
 
     def is_out_of_bounds(self, screen_width, screen_height):
-        buffer = 1000  # Margen extra
+        buffer = 1300  # Margen extra
         return (
             self.x < -buffer or self.x > screen_width + buffer or
             self.y < -buffer or self.y > screen_height + (buffer - 300)
