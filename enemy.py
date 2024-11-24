@@ -83,15 +83,17 @@ class Enemy:
 
 
 class EnemyDistance(Enemy):
-    def __init__(self, x, y):
+    def __init__(self, x, y, bullet_sprites):
         super().__init__(x, y)
         self.bullets = []
         self.reload_time = 1000  # Tiempo de recarga (en milisegundos)
         self.last_shot_time = 0  # Tiempo del último disparo
+        self.bullet_sprites = bullet_sprites["enemy"]  # Sprite de bala normal enemigo
         self.sprites = [
             pygame.transform.scale(pygame.image.load(f"./assets/enemy_distance/enemy_distance_{i}.png"), (100, 100))
             for i in range(1, 5)
         ]
+
 
     def shoot(self, player_pos):
         current_time = pygame.time.get_ticks()
@@ -106,18 +108,20 @@ class EnemyDistance(Enemy):
                 dx /= distance
                 dy /= distance
             
-            # Crear una nueva bala
+            # Crear una nueva bala con sprites
             new_bullet = Bullet(
                 x=self.rect.centerx,
                 y=self.rect.centery,
                 dx=dx,
                 dy=dy,
                 speed=6,
-                color=(255, 0, 0),
+                color=(255, 0, 0),  # Este color es redundante si usas sprites
                 damage=1,
-                bullet_type=BulletType.NORMAL
+                bullet_type=BulletType.NORMAL,
+                sprites=self.bullet_sprites  # Pasar sprites
             )
             self.bullets.append(new_bullet)
+
 
     def update_bullets(self):
         """Actualizar las balas disparadas por el enemigo."""
@@ -135,7 +139,7 @@ class EnemyDistance(Enemy):
 
 
 class EnemyShotgun(Enemy):
-    def __init__(self, x, y):
+    def __init__(self, x, y, bullet_sprites):
         super().__init__(x, y)
         self.reload_time = random.randint(1000, 1500)  # Tiempo de recarga más largo
         self.bullets = []
@@ -143,6 +147,7 @@ class EnemyShotgun(Enemy):
         self.bullet_speed = 7  # Velocidad de las balas
         self.bullet_count = 5  # Número de balas disparadas
         self.spread_angle = 45  # Ángulo total del abanico en grados
+        self.bullet_sprites = bullet_sprites["enemy_shotgun"]  # Sprites específicos de bala
         self.sprites = [
             pygame.transform.scale(pygame.image.load(f"./assets/enemy_shotgun/enemy_shotgun_{i}.png"), (100, 100))
             for i in range(1, 7)
@@ -150,6 +155,7 @@ class EnemyShotgun(Enemy):
         self.current_frame = 0  # Animación del enemigo
         self.animation_speed = 0.1
         self.animation_timer = 0
+
 
     def shoot(self, player_pos):
         current_time = pygame.time.get_ticks()
@@ -166,19 +172,22 @@ class EnemyShotgun(Enemy):
                 bullet_dx = math.cos(angle)  # Dirección X de la bala
                 bullet_dy = math.sin(angle)  # Dirección Y de la bala
 
-                # Crear una nueva bala
+                # Crear una nueva bala con sprites
                 new_bullet = Bullet(
                     x=self.rect.centerx,
                     y=self.rect.centery,
                     dx=bullet_dx,
                     dy=bullet_dy,
                     speed=self.bullet_speed,
-                    color=(255, 150, 0),  # Color específico para estas balas
-                    damage=2  # Daño de cada bala de escopeta
+                    color=(255, 150, 0),  # Color opcional si no hay sprites
+                    damage=2,  # Daño de cada bala de escopeta
+                    bullet_type=BulletType.SHOTGUN,
+                    sprites=self.bullet_sprites  # Pasar los sprites de bala
                 )
                 self.bullets.append(new_bullet)
 
             self.last_shot_time = current_time
+
 
     def update(self, player_pos):
         """Actualiza el movimiento, las balas y la rotación."""
@@ -202,17 +211,19 @@ class EnemyShotgun(Enemy):
             bullet.draw(screen)
 
 class FinalBoss(Enemy):
-    def __init__(self, x, y):
+    def __init__(self, x, y, bullet_sprites):
         super().__init__(x, y)
         self.health = 50  # Salud alta
-        self.reload_time = 400  # Reducimos el tiempo para disparar más rápido (doble de velocidad)
+        self.reload_time = 400  # Dispara rápido
         self.bullets = []
         self.last_shot_time = 0
+        self.bullet_sprites = bullet_sprites["enemy_shotgun"]  # Sprites para las balas tipo SHOTGUN
 
         # Cargar el sprite único del jefe
         self.sprite = pygame.transform.scale(
             pygame.image.load("./assets/enemy_boss/enemy_boss.png"), (150, 150)
-        )  # Ajusta el tamaño según sea necesario
+        )
+
 
     def shoot(self, player_pos):
         """Dispara múltiples balas tipo SHOTGUN hacia el jugador."""
@@ -221,24 +232,28 @@ class FinalBoss(Enemy):
             self.last_shot_time = current_time
 
             # Disparo tipo escopeta: balas en un cono
-            for angle_offset in range(-30, 31, 15):
+            for angle_offset in range(-30, 31, 15):  # Desde -30° a 30° en pasos de 15°
                 angle = math.atan2(
                     player_pos[1] - self.rect.centery,
                     player_pos[0] - self.rect.centerx,
                 ) + math.radians(angle_offset)
                 dx = math.cos(angle)
                 dy = math.sin(angle)
+
+                # Crear una bala con sprites animados
                 new_bullet = Bullet(
                     x=self.rect.centerx,
                     y=self.rect.centery,
                     dx=dx,
                     dy=dy,
                     speed=10,  # Velocidad personalizada
-                    color=(255, 50, 50),  # Color rojo para las balas del jefe
+                    color=(255, 50, 50),  # Solo para el caso en que no haya sprites
                     damage=5,  # Más daño porque es el jefe
-                    bullet_type=BulletType.SHOTGUN  # Usar el tipo SHOTGUN
+                    bullet_type=BulletType.SHOTGUN,  # Usar el tipo SHOTGUN
+                    sprites=self.bullet_sprites  # Pasar sprites animados
                 )
                 self.bullets.append(new_bullet)
+
 
     def update(self, player_pos, width, height):
         """Actualiza el movimiento del jefe, dispara y elimina balas fuera de pantalla."""

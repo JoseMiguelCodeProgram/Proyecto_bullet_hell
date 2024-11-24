@@ -4,6 +4,7 @@ from enemy import Enemy, EnemyDistance, EnemyShotgun, FinalBoss
 from settings import WIDTH, HEIGHT, FPS
 from menu import show_menu
 from death_menu import DeathMenu
+from resources import load_bullet_sprites
 import random
 
 pygame.init()
@@ -22,6 +23,7 @@ if menu_action == "exit":
     pygame.quit()
     exit()
 # Variables para las oleadas
+bullet_sprites = load_bullet_sprites()
 current_wave = 1
 total_waves = 6  # 5 normales + 1 con el jefe final
 wave_enemies_count = 1  # Número base de enemigos

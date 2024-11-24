@@ -5,7 +5,7 @@ from settings import WIDTH, HEIGHT, player_size
 from bullet import Bullet, BulletType
 
 class Player:
-    def __init__(self, x, y):
+    def __init__(self, x, y, bullet_sprites):
         self.rect = pygame.Rect(x, y, player_size, player_size)
         self.bullets = []
         self.health = 10
@@ -15,6 +15,8 @@ class Player:
         self.weapons = [BulletType.NORMAL, BulletType.SHOTGUN]
         self.current_weapon_index = 0
 
+        self.bullet_sprites = bullet_sprites  # Agrega esta línea
+
         # Animación del jugador
         self.sprites = [
             pygame.transform.scale(pygame.image.load(f"./assets/player/jugador_{i}.png"), (player_size, player_size))
@@ -23,6 +25,7 @@ class Player:
         self.current_frame = 0
         self.animation_speed = 0.1
         self.animation_timer = 0
+
 
     def update(self):
         # Movimiento
@@ -83,16 +86,16 @@ class Player:
 
     def shoot(self, mouse_x, mouse_y):
         current_weapon = self.weapons[self.current_weapon_index]
-
+    
         dx = mouse_x - self.rect.centerx
         dy = mouse_y - self.rect.centery
         distance = math.sqrt(dx**2 + dy**2)
         if distance != 0:
             dx /= distance
             dy /= distance
-
+    
         if current_weapon == BulletType.NORMAL:
-            # Disparo normal
+            # Disparo normal con animación
             new_bullet = Bullet(
                 x=self.rect.centerx,
                 y=self.rect.centery,
@@ -101,12 +104,13 @@ class Player:
                 speed=10,
                 color=(255, 255, 0),
                 damage=1,
-                bullet_type=BulletType.NORMAL
+                bullet_type=BulletType.NORMAL,
+                sprites=self.bullet_sprites["normal"]
             )
             self.bullets.append(new_bullet)
-
+    
         elif current_weapon == BulletType.SHOTGUN:
-            # Disparo tipo escopeta
+            # Disparo tipo escopeta con animación
             spread_angle = 45  # Ángulo total del abanico
             bullet_count = 5  # Número de balas
             for i in range(bullet_count):
@@ -122,9 +126,11 @@ class Player:
                     speed=8,
                     color=(255, 100, 0),
                     damage=2,
-                    bullet_type=BulletType.SHOTGUN
+                    bullet_type=BulletType.SHOTGUN,
+                    sprites=self.bullet_sprites["shotgun"]
                 )
                 self.bullets.append(new_bullet)
+
 
     def reset_position(self, x, y):
         """Reinicia la posición del jugador."""
