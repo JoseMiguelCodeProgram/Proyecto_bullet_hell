@@ -55,7 +55,7 @@ sonido_disparo.set_volume(0.5)  # Ajustar volumen si es necesario
 menu_action = show_menu(screen)
 if menu_action == "exit":
     pygame.quit()
-    exit()
+    sys.exit()
 # Variables para las oleadas
 bullet_sprites = load_bullet_sprites()
 current_wave = 1
@@ -389,7 +389,7 @@ while running:
                         player.reset_position(WIDTH // 2, HEIGHT // 2)
                         game_state = "playing"
                         # Reiniciar música para el juego
-                        pygame.mixer.music.load("musica_juego.mp3")
+                        pygame.mixer.music.load(musica_path)
                         pygame.mixer.music.play(-1)
                         musica_jugando = True
 
