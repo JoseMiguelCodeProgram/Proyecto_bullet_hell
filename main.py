@@ -108,8 +108,6 @@ def start_wave(wave_number, player_pos):
         final_boss.set_angle_to_player(player_pos)
         enemies_to_spawn.append(final_boss)
 
-
-
 def draw_wave_message(screen, wave_number):
     """Dibuja el mensaje de la oleada en el centro de la pantalla."""
     font = pygame.font.Font(None, 74)
