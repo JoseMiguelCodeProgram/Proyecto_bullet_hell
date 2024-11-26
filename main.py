@@ -33,13 +33,8 @@ fondo_juego = pygame.image.load(resource_path("assets/fondo_juego.jpg"))
 # Escalar el fondo al tamaño de la pantalla
 fondo_juego = pygame.transform.scale(fondo_juego, (WIDTH, HEIGHT))
 
-# Crear una superficie oscura usando BLEND_RGBA_MULT
-filtro_oscuro = pygame.Surface((WIDTH, HEIGHT))
-filtro_oscuro.fill((250, 250, 250))  # Ajusta los valores (0-255) para controlar el nivel de oscurecimiento
-
 # Dibujar el fondo y aplicar el filtro oscuro
 screen.blit(fondo_juego, (0, 0))
-screen.blit(filtro_oscuro, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
 
 
